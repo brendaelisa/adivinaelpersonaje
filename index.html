@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adivina el Personaje SUD</title>
+    <link rel="icon" href="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 90%;
+            max-width: 500px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        h2 {
+            color: #444;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        p {
+            color: #666;
+            font-size: 1.1em;
+            margin-bottom: 15px;
+        }
+        #pista {
+            font-style: italic;
+            margin-top: 20px;
+            color: #0056b3;
+            font-size: 1.2em;
+        }
+        input[type="text"] {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: calc(100% - 22px);
+            margin-bottom: 15px;
+            font-size: 1em;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1.1em;
+            transition: background-color 0.3s ease;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #mensaje {
+            margin-top: 20px;
+            font-weight: bold;
+            color: #d9534f;
+        }
+        .info-panel {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 15px;
+            font-size: 1em;
+            color: #555;
+            flex-wrap: wrap;
+        }
+        .info-panel span {
+            padding: 5px 10px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+            margin: 5px;
+        }
+        .level-selection, .player-setup {
+            margin-bottom: 20px;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }
+        #playerList {
+            margin-top: 10px;
+            text-align: left;
+            padding-left: 20px;
+            list-style: decimal;
+        }
+        #playerList li {
+            padding: 3px 0;
+            color: #555;
+        }
+        #scoreboard {
+            margin-top: 20px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+        }
+        #scoreboard h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .player-score {
+            font-weight: bold;
+            color: #007bff;
+            margin: 5px 0;
+        }
+        .current-player {
+            color: #28a745;
+            font-weight: bold;
+            text-decoration: underline;
+        }
+        /* Estilo para el botón de dificultad seleccionado */
+        .difficulty-buttons button.selected {
+            background-color: #007bff;
+            color: white;
+            border: 1px solid #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Adivina el Personaje SUD</h1>
+
+        <div id="setupScreen">
+            <div class="player-setup">
+                <h2>Configurar Jugadores</h2>
+                <input type="text" id="playerNameInput" placeholder="Nombre del jugador">
+                <button id="addPlayerBtn">Añadir Jugador</button>
+                <div id="playerListContainer">
+                    <ol id="playerList"></ol>
+                </div>
+            </div>
+
+            <div class="level-selection">
+                <h2>Selecciona la dificultad:</h2>
+                <div class="difficulty-buttons">
+                    <button id="facilBtn" data-dificultad="facil">Fácil (7 intentos)</button>
+                    <button id="normalBtn" data-dificultad="normal">Normal (5 intentos)</button>
+                    <button id="dificilBtn" data-dificultad="dificil">Difícil (3 intentos)</button>
+                </div>
+            </div>
+            <button id="startGameBtn" style="display: none;">Iniciar Juego</button>
+            <p id="mensajeSetup" style="margin-top: 10px; font-weight: bold; color: #d9534f;"></p>
+        </div>
+
+        <div id="gameScreen" style="display: none;">
+            <p>Estoy pensando en un personaje de la historia de la Iglesia SUD.</p>
+            <p id="pista">Cargando pista...</p>
+            
+            <div class="info-panel">
+                <span>Turno de: <span id="turnoActual"></span></span>
+                <span>Intentos restantes: <span id="intentosRestantes"></span></span>
+            </div>
+            
+            <div id="scoreboard"></div>
+
+            <input type="text" id="adivinanzaInput" placeholder="Escribe tu adivinanza aquí">
+            <button id="adivinarBtn">Adivinar</button>
+            <p id="mensajeGame"></p>
+            <button id="reiniciarBtn" style="display: none;">Siguiente Ronda</button>
+        </div>
+
+    <script>
+        // --- Variables del juego ---
+        const personajes = [
+            { nombre: "José Smith", pista: "Fue el primer profeta y restaurador de la Iglesia." },
+            { nombre: "Brigham Young", pista: "Lideró a los pioneros en el viaje hacia el Valle del Lago Salado." },
+            { nombre: "Emma Smith", pista: "Fue la primera Presidenta General de la Sociedad de Socorro y la esposa del Profeta de la Restauración." },
+            { nombre: "Moroni", pista: "Un ángel que visitó a José Smith y le mostró las planchas del Libro de Mormón." },
+            { nombre: "Lucy Mack Smith", pista: "La madre de José Smith, quien documentó gran parte de la historia temprana de la Iglesia." },
+            { nombre: "John Taylor", pista: "Sucedió a Brigham Young como tercer presidente de la Iglesia." },
+            { nombre: "Parley P. Pratt", pista: "Uno de los primeros y más influyentes apóstoles, conocido por su gran trabajo misional." },
+            { nombre: "Eliza R. Snow", pista: "Una destacada poetisa y segunda Presidenta General de la Sociedad de Socorro." },
+            { nombre: "Wilford Woodruff", pista: "Cuarto Presidente de la Iglesia, conocido por recibir la revelación del Manifiesto que puso fin a la poligamia." },
+            { nombre: "Lorenzo Snow", pista: "Quinto Presidente de la Iglesia, enfatizó el pago de los diezmos." },
+            { nombre: "Mary Elizabeth Rollins Lightner", pista: "Ayudó a salvar manuscritos del Libro de Mandamientos de una turba." },
+            { nombre: "Hyrum Smith", pista: "Hermano mayor de José Smith y Patriarca de la Iglesia." },
+            { nombre: "Oliver Cowdery", pista: "Escriba principal del Libro de Mormón y uno de los Tres Testigos." }
+        ];
+
+        const dificultades = {
+            facil: { intentos: 7, puntosPorAcierto: 20 },
+            normal: { intentos: 5, puntosPorAcierto: 30 },
+            dificil: { intentos: 3, puntosPorAcierto: 50 }
+        };
+
+        let players = [];
+        let currentPlayerIndex = 0;
+        let personajeSecreto = {};
+        let intentosRestantes = 0;
+        let juegoTerminado = false;
+        let dificultadActual = "normal"; // Dificultad predeterminada
+
+        // --- Referencias a elementos del DOM ---
+        const setupScreen = document.getElementById("setupScreen");
+        const gameScreen = document.getElementById("gameScreen");
+        const playerNameInput = document.getElementById("playerNameInput");
+        const addPlayerBtn = document.getElementById("addPlayerBtn");
+        const playerList = document.getElementById("playerList");
+        const startGameBtn = document.getElementById("startGameBtn");
+        const mensajeSetup = document.getElementById("mensajeSetup");
+
+        const pistaElement = document.getElementById("pista");
+        const adivinanzaInput = document.getElementById("adivinanzaInput");
+        const adivinarBtn = document.getElementById("adivinarBtn");
+        const mensajeGame = document.getElementById("mensajeGame");
+        const turnoActualElement = document.getElementById("turnoActual");
+        const intentosRestantesElement = document.getElementById("intentosRestantes");
+        const reiniciarBtn = document.getElementById("reiniciarBtn");
+        const scoreboard = document.getElementById("scoreboard");
+
+        const facilBtn = document.getElementById("facilBtn");
+        const normalBtn = document.getElementById("normalBtn");
+        const dificilBtn = document.getElementById("dificilBtn");
+        const dificultadButtons = [facilBtn, normalBtn, dificilBtn];
+
+        // --- Funciones de configuración de jugadores ---
+        function addPlayer() {
+            const name = playerNameInput.value.trim();
+            mensajeSetup.textContent = ""; // Limpiar mensaje anterior del setup
+
+            if (name === "") {
+                mensajeSetup.textContent = "Por favor, introduce un nombre.";
+                return;
+            }
+
+            if (players.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+                mensajeSetup.textContent = "Ese nombre de jugador ya existe.";
+                return;
+            }
+            
+            players.push({ name: name, score: 0 });
+            playerNameInput.value = "";
+            renderPlayerList();
+            if (players.length >= 1) {
+                startGameBtn.style.display = "block";
+            }
+            playerNameInput.focus();
+        }
+
+        function renderPlayerList() {
+            playerList.innerHTML = "";
+            players.forEach((player) => {
+                const li = document.createElement("li");
+                li.textContent = player.name;
+                playerList.appendChild(li);
+            });
+        }
+
+        function renderScoreboard() {
+            scoreboard.innerHTML = "<h3>Puntuaciones:</h3>";
+            players.forEach((player, index) => {
+                const p = document.createElement("p");
+                p.classList.add("player-score");
+                if (index === currentPlayerIndex && !juegoTerminado) {
+                    p.classList.add("current-player");
+                }
+                p.textContent = `${player.name}: ${player.score} puntos`;
+                scoreboard.appendChild(p);
+            });
+        }
+
+        // --- Funciones del juego ---
+
+        function iniciarRonda() {
+            let nuevoPersonaje;
+            do {
+                nuevoPersonaje = personajes[Math.floor(Math.random() * personajes.length)];
+            } while (personajes.length > 1 && nuevoPersonaje.nombre === personajeSecreto.nombre);
+
+            personajeSecreto = nuevoPersonaje;
+            
+            // Establece los intentos según la dificultad actual
+            intentosRestantes = dificultades[dificultadActual].intentos;
+            
+            juegoTerminado = false;
+
+            // Reinicia la interfaz para la nueva ronda
+            pistaElement.textContent = personajeSecreto.pista;
+            intentosRestantesElement.textContent = intentosRestantes;
+            adivinanzaInput.value = "";
+            mensajeGame.textContent = "";
+            mensajeGame.style.color = "#d9534f";
+            adivinarBtn.disabled = false;
+            adivinanzaInput.disabled = false;
+            reiniciarBtn.style.display = "none";
+            adivinanzaInput.focus();
+
+            // Actualiza el turno y el marcador
+            turnoActualElement.textContent = players[currentPlayerIndex].name;
+            renderScoreboard();
+
+            // Deshabilita los botones de dificultad una vez que el juego ha comenzado
+            dificultadButtons.forEach(btn => btn.disabled = true);
+        }
+
+        function verificarAdivinanza() {
+            if (juegoTerminado) return;
+
+            const adivinanzaUsuario = adivinanzaInput.value.trim();
+            adivinanzaInput.value = "";
+
+            if (adivinanzaUsuario === "") {
+                mensajeGame.textContent = "Por favor, escribe un nombre para adivinar.";
+                mensajeGame.style.color = "#d9534f";
+                return;
+            }
+
+            const adivinanzaNormalizada = adivinanzaUsuario.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            const personajeNormalizado = personajeSecreto.nombre.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+            if (adivinanzaNormalizada === personajeNormalizado) {
+                const puntosGanados = dificultades[dificultadActual].puntosPorAcierto * intentosRestantes;
+                players[currentPlayerIndex].score += puntosGanados;
+                
+                mensajeGame.textContent = `¡Correcto, ${players[currentPlayerIndex].name}! El personaje era ${personajeSecreto.nombre}. Ganaste ${puntosGanados} puntos.`;
+                mensajeGame.style.color = "#28a745";
+                terminarRonda(true);
+            } else {
+                intentosRestantes--;
+                intentosRestantesElement.textContent = intentosRestantes;
+
+                if (intentosRestantes > 0) {
+                    mensajeGame.textContent = `Incorrecto, ${players[currentPlayerIndex].name}. Te quedan ${intentosRestantes} intentos.`;
+                    mensajeGame.style.color = "#d9534f";
+                } else {
+                    mensajeGame.textContent = `¡Se acabaron los intentos para ${players[currentPlayerIndex].name}! El personaje era ${personajeSecreto.nombre}.`;
+                    mensajeGame.style.color = "#d9534f";
+                    terminarRonda(false);
+                }
+            }
+            renderScoreboard();
+            adivinanzaInput.focus();
+        }
+
+        function terminarRonda(haGanado) {
+            juegoTerminado = true;
+            adivinarBtn.disabled = true;
+            adivinanzaInput.disabled = true;
+            reiniciarBtn.style.display = "block";
+            reiniciarBtn.textContent = "Siguiente Ronda"; // Siempre "Siguiente Ronda" al finalizar una ronda
+
+            currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+            renderScoreboard();
+        }
+
+        function reiniciarJuegoCompleto() {
+            players.forEach(player => player.score = 0);
+            currentPlayerIndex = 0;
+
+            setupScreen.style.display = "block";
+            gameScreen.style.display = "none";
+
+            reiniciarBtn.textContent = "Siguiente Ronda";
+            playerList.innerHTML = "";
+            players = [];
+            startGameBtn.style.display = "none";
+            playerNameInput.value = "";
+            mensajeSetup.textContent = "";
+            mensajeGame.textContent = "";
+
+            // Habilitar los botones de dificultad y marcar la dificultad actual
+            dificultadButtons.forEach(btn => btn.disabled = false);
+            marcarDificultadSeleccionada(dificultadActual);
+            playerNameInput.focus();
+        }
+
+        function marcarDificultadSeleccionada(dificultad) {
+            dificultadButtons.forEach(btn => {
+                if (btn.dataset.dificultad === dificultad) {
+                    btn.classList.add("selected");
+                } else {
+                    btn.classList.remove("selected");
+                }
+            });
+        }
+
+        // --- Event Listeners ---
+
+        addPlayerBtn.addEventListener("click", addPlayer);
+        playerNameInput.addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                addPlayer();
+            }
+        });
+
+        startGameBtn.addEventListener("click", function() {
+            if (players.length > 0) {
+                setupScreen.style.display = "none";
+                gameScreen.style.display = "block";
+                iniciarRonda(); // Llama a iniciarRonda para que aplique la dificultad elegida
+            } else {
+                mensajeSetup.textContent = "Por favor, añade al menos un jugador para empezar.";
+            }
+        });
+
+        adivinarBtn.addEventListener("click", verificarAdivinanza);
+        adivinanzaInput.addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                verificarAdivinanza();
+            }
+        });
+
+        reiniciarBtn.addEventListener("click", function() {
+            // Este botón siempre inicia la siguiente ronda.
+            // Si quisieras un botón para reiniciar todo el juego, sería otro botón aparte.
+            iniciarRonda();
+        });
+
+        dificultadButtons.forEach(btn => {
+            btn.addEventListener("click", function() {
+                dificultadActual = this.dataset.dificultad;
+                marcarDificultadSeleccionada(dificultadActual);
+                // Si el juego ya está en gameScreen, reiniciar la ronda con la nueva dificultad
+                if (gameScreen.style.display === "block") {
+                     iniciarRonda();
+                }
+            });
+        });
+
+        document.addEventListener("DOMContentLoaded", function() {
+            setupScreen.style.display = "block";
+            gameScreen.style.display = "none";
+            marcarDificultadSeleccionada(dificultadActual); // Marca la dificultad por defecto al cargar
+            playerNameInput.focus();
+        });
+
+    </script>
+</body>
+</html>
