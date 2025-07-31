@@ -93,6 +93,13 @@
       border-radius: 10px;
       cursor: pointer;
     }
+
+    #verseDisplay {
+      margin-top: 10px;
+      font-size: 18px;
+      text-align: center;
+      height: 30px;
+    }
   </style>
 </head>
 <body>
@@ -103,7 +110,8 @@
 
   <canvas id="game" width="300" height="300"></canvas>
 
-  <!-- Controles para móvil -->
+  <div id="verseDisplay"></div>
+
   <div class="controls">
     <button onclick="setDirection('up')">⬆️</button>
     <div class="row">
@@ -113,13 +121,17 @@
     <button onclick="setDirection('down')">⬇️</button>
   </div>
 
-  <!-- Game Over -->
   <div id="gameOverScreen">
     <h1>🛑 Game Over</h1>
     <div id="finalScore"></div>
     <p id="finalVerse"></p>
     <button onclick="location.reload()">Jugar de nuevo</button>
   </div>
+
+  <audio id="gameMusic" loop>
+    <source src="audio/musica.mp3" type="audio/mpeg">
+    Tu navegador no soporta el elemento de audio.
+  </audio>
 
   <script>
     const canvas = document.getElementById('game');
@@ -129,6 +141,8 @@
     const gameOverScreen = document.getElementById('gameOverScreen');
     const finalScore = document.getElementById('finalScore');
     const finalVerse = document.getElementById('finalVerse');
+    const verseDisplay = document.getElementById('verseDisplay');
+    const gameMusic = document.getElementById('gameMusic');
 
     const box = 15;
     let snake = [{ x: 5 * box, y: 5 * box }];
@@ -136,7 +150,9 @@
     let direction = 'right';
     let score = 0;
     let lives = 3;
-    let playing = true;
+    let playing = false; 
+    let verseShownAtScore = -1;
+    let isFirstMove = true; 
 
     const verses = [
       "“Todo lo puedo en Cristo que me fortalece.” – Filipenses 4:13",
@@ -152,13 +168,24 @@
     }
 
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowUp' && direction !== 'down') direction = 'up';
-      else if (e.key === 'ArrowDown' && direction !== 'up') direction = 'down';
-      else if (e.key === 'ArrowLeft' && direction !== 'right') direction = 'left';
-      else if (e.key === 'ArrowRight' && direction !== 'left') direction = 'right';
+      if (isFirstMove && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        setDirection(e.key.replace('Arrow', '').toLowerCase());
+      } else {
+        if (e.key === 'ArrowUp' && direction !== 'down') direction = 'up';
+        else if (e.key === 'ArrowDown' && direction !== 'up') direction = 'down';
+        else if (e.key === 'ArrowLeft' && direction !== 'right') direction = 'left';
+        else if (e.key === 'ArrowRight' && direction !== 'left') direction = 'right';
+      }
     });
 
     function setDirection(dir) {
+      if (isFirstMove) {
+        playing = true;
+        isFirstMove = false;
+        gameMusic.play();
+        setInterval(draw, 150); // Velocidad más lenta
+      }
+      
       if (dir === 'up' && direction !== 'down') direction = 'up';
       else if (dir === 'down' && direction !== 'up') direction = 'down';
       else if (dir === 'left' && direction !== 'right') direction = 'left';
@@ -186,10 +213,25 @@
       finalScore.textContent = 'Puntuación final: ' + score;
       finalVerse.textContent = verses[Math.floor(Math.random() * verses.length)];
       gameOverScreen.style.display = 'flex';
+      gameMusic.pause();
+    }
+
+    function showVerse() {
+      if (score > 0 && score % 10 === 0 && score !== verseShownAtScore) {
+        verseDisplay.textContent = verses[Math.floor(Math.random() * verses.length)];
+        verseShownAtScore = score;
+      }
     }
 
     function draw() {
-      if (!playing) return;
+      if (!playing) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#0f0';
+        ctx.font = '20px Poppins';
+        ctx.textAlign = 'center';
+        ctx.fillText('Toca una flecha para comenzar', canvas.width / 2, canvas.height / 2);
+        return;
+      }
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -225,6 +267,7 @@
         score++;
         food = randomFood();
         updateHUD();
+        showVerse(); 
       } else {
         snake.pop();
       }
@@ -233,7 +276,7 @@
     }
 
     updateHUD();
-    setInterval(draw, 250); // 🔽 Velocidad más lenta
+    draw(); // Dibuja el mensaje de inicio
   </script>
 </body>
 </html>
